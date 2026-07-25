@@ -4,8 +4,8 @@ Course Project
 
 ## Team Members
 
-- Member 1
-- Member 2
+- Trương Minh Quân
+- Nguyễn Thanh Danh
 
 ## Tech Stack
 
