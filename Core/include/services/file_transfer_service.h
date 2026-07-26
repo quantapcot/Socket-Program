@@ -1,0 +1,7 @@
+﻿#ifndef SERVICES_FILE_TRANSFER_SERVICE_H
+#define SERVICES_FILE_TRANSFER_SERVICE_H
+
+// Handle RETR / STOR / APPE / STOU
+// TODO: implement declarations here
+
+#endif // SERVICES_FILE_TRANSFER_SERVICE_H

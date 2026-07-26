@@ -1,0 +1,7 @@
+﻿#ifndef SERVICES_FILE_MANAGE_SERVICE_H
+#define SERVICES_FILE_MANAGE_SERVICE_H
+
+// Handle DELE / RNFR / RNTO / SIZE / MDTM
+// TODO: implement declarations here
+
+#endif // SERVICES_FILE_MANAGE_SERVICE_H

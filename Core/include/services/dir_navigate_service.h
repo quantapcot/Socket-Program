@@ -1,0 +1,7 @@
+﻿#ifndef SERVICES_DIR_NAVIGATE_SERVICE_H
+#define SERVICES_DIR_NAVIGATE_SERVICE_H
+
+// Handle PWD / CWD / CDUP
+// TODO: implement declarations here
+
+#endif // SERVICES_DIR_NAVIGATE_SERVICE_H

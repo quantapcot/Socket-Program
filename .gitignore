@@ -1,0 +1,23 @@
+# Visual Studio
+.vs/
+*.vcxproj.user
+*.slnx.user
+
+# Build output
+build/
+Debug/
+Release/
+x64/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.lib
+
+# Logs
+logs/*.log
+!logs/.gitkeep
+
+# Server test data
+data/server_root/*
+!data/server_root/.gitkeep
