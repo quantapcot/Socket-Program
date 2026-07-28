@@ -20,6 +20,63 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp" />
+    <ClCompile Include="src\common\file_metadata.cpp" />
+    <ClCompile Include="src\common\session.cpp" />
+    <ClCompile Include="src\network\tcp_connect.cpp" />
+    <ClCompile Include="src\network\tcp_listen.cpp" />
+    <ClCompile Include="src\network\udp_bind.cpp" />
+    <ClCompile Include="src\network\udp_io.cpp" />
+    <ClCompile Include="src\protocol\command_parser.cpp" />
+    <ClCompile Include="src\protocol\rdt_checksum.cpp" />
+    <ClCompile Include="src\protocol\rdt_header_codec.cpp" />
+    <ClCompile Include="src\protocol\rdt_receiver.cpp" />
+    <ClCompile Include="src\protocol\rdt_sender.cpp" />
+    <ClCompile Include="src\protocol\rdt_window.cpp" />
+    <ClCompile Include="src\protocol\reply_formatter.cpp" />
+    <ClCompile Include="src\services\auth_service.cpp" />
+    <ClCompile Include="src\services\dir_list_service.cpp" />
+    <ClCompile Include="src\services\dir_manage_service.cpp" />
+    <ClCompile Include="src\services\dir_navigate_service.cpp" />
+    <ClCompile Include="src\services\file_manage_service.cpp" />
+    <ClCompile Include="src\services\file_transfer_service.cpp" />
+    <ClCompile Include="src\services\hash_service.cpp" />
+    <ClCompile Include="src\services\mode_service.cpp" />
+    <ClCompile Include="src\services\session_manager.cpp" />
+    <ClCompile Include="src\utils\logger.cpp" />
+    <ClCompile Include="src\utils\md5.cpp" />
+    <ClCompile Include="src\utils\sha256.cpp" />
+    <ClCompile Include="src\utils\string_utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\common\file_metadata.h" />
+    <ClInclude Include="include\common\session.h" />
+    <ClInclude Include="include\network\tcp_connect.h" />
+    <ClInclude Include="include\network\tcp_listen.h" />
+    <ClInclude Include="include\network\udp_bind.h" />
+    <ClInclude Include="include\network\udp_io.h" />
+    <ClInclude Include="include\protocol\command_parser.h" />
+    <ClInclude Include="include\protocol\command_types.h" />
+    <ClInclude Include="include\protocol\rdt_checksum.h" />
+    <ClInclude Include="include\protocol\rdt_header.h" />
+    <ClInclude Include="include\protocol\rdt_header_codec.h" />
+    <ClInclude Include="include\protocol\rdt_receiver.h" />
+    <ClInclude Include="include\protocol\rdt_sender.h" />
+    <ClInclude Include="include\protocol\rdt_window.h" />
+    <ClInclude Include="include\protocol\reply_codes.h" />
+    <ClInclude Include="include\protocol\reply_formatter.h" />
+    <ClInclude Include="include\services\auth_service.h" />
+    <ClInclude Include="include\services\dir_list_service.h" />
+    <ClInclude Include="include\services\dir_manage_service.h" />
+    <ClInclude Include="include\services\dir_navigate_service.h" />
+    <ClInclude Include="include\services\file_manage_service.h" />
+    <ClInclude Include="include\services\file_transfer_service.h" />
+    <ClInclude Include="include\services\hash_service.h" />
+    <ClInclude Include="include\services\mode_service.h" />
+    <ClInclude Include="include\services\session_manager.h" />
+    <ClInclude Include="include\utils\logger.h" />
+    <ClInclude Include="include\utils\md5.h" />
+    <ClInclude Include="include\utils\sha256.h" />
+    <ClInclude Include="include\utils\string_utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
@@ -114,7 +171,7 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)Core\include</AdditionalIncludeDirectories>
     </ClCompile>
@@ -133,7 +190,7 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>$(SolutionDir)Core\include</AdditionalIncludeDirectories>
     </ClCompile>
