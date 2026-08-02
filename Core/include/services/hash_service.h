@@ -1,7 +1,12 @@
-﻿#ifndef SERVICES_HASH_SERVICE_H
+#ifndef SERVICES_HASH_SERVICE_H
 #define SERVICES_HASH_SERVICE_H
 
-// Handle HASH command (MD5/SHA-256)
-// TODO: implement declarations here
+#include "common/session.h"
+#include <string>
+#include <memory>
 
+class HashService {
+public:
+    static std::string handleHashCommand(std::shared_ptr<Session> session, const std::string& fileName);
+};
 #endif // SERVICES_HASH_SERVICE_H

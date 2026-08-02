@@ -1,7 +1,8 @@
-﻿#ifndef PROTOCOL_COMMAND_TYPES_H
+#ifndef PROTOCOL_COMMAND_TYPES_H
 #define PROTOCOL_COMMAND_TYPES_H
 
 // Enum CommandType for all FTP commands
-// TODO: implement declarations here
-
+enum class CommandType {
+    USER, PASS, QUIT, NOOP, PWD, CWD, CDUP, MKD, RMD, LIST, NLST, STAT, SIZE, MDTM, TYPE, MODE, PORT, PASV, RETR, STOR, STOU, APPE, DELE, RNFR, RNTO, HASH, ABOR, HELP, UNKNOWN
+};
 #endif // PROTOCOL_COMMAND_TYPES_H

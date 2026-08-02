@@ -1,4 +1,19 @@
-﻿#include "common/session.h"
+#include "common/session.h"
 
-// Struct Session: user, cwd, socket fd, auth state
-// TODO: implement definitions here
+Session::Session(int id, TcpConnection conn, std::string ip) 
+    : sessionId(id), controlConnection(conn), clientIp(ip) {
+    authState = AuthState::NOT_LOGGED_IN;
+    currentDirectory = "/";
+    type = TransferType::ASCII;
+    dataMode = DataMode::NONE;
+    clientDataPort = 0;
+    serverDataPort = 0;
+    passiveSocket = nullptr;
+}
+
+Session::~Session() {
+    if (passiveSocket != nullptr) {
+        delete passiveSocket;
+        passiveSocket = nullptr;
+    }
+}

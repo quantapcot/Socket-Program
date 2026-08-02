@@ -1,8 +1,9 @@
-﻿#define _HAS_STD_BYTE 0
+#define _HAS_STD_BYTE 0
 #include "network/tcp_connect.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iostream>
+#include <cstring>
 using namespace std;
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -41,11 +42,9 @@ TcpConnection::TcpConnection(unsigned long long existingSocket)
 
 TcpConnection::~TcpConnection()
 {
-    // Tu dong don dep khi object bi huy, tranh ro ri tai nguyen neu nguoi dung quen goi closeConnection()
-    if (isValid)
-    {
-        closeConnection();
-    }
+    // Do TcpConnection được copy by value nhiều lần (khi pass vào thread, session),
+    // việc gọi closeConnection() tự động ở đây sẽ làm socket bị đóng sớm.
+    // Người dùng class này phải gọi closeConnection() thủ công khi thực sự xong.
 }
 
 bool TcpConnection::connectToServer(string ip, int port)
@@ -146,6 +145,20 @@ string TcpConnection::receiveLine()
 bool TcpConnection::isConnected()
 {
     return isValid;
+}
+
+string TcpConnection::getRemoteIP()
+{
+    if (!isValid) return "";
+    SOCKET realSocket = (SOCKET)socketHandle;
+    sockaddr_in remoteAddr;
+    int addrLen = sizeof(remoteAddr);
+    if (getpeername(realSocket, (sockaddr*)&remoteAddr, &addrLen) == 0) {
+        char ipStr[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(remoteAddr.sin_addr), ipStr, INET_ADDRSTRLEN);
+        return string(ipStr);
+    }
+    return "";
 }
 
 void TcpConnection::closeConnection()

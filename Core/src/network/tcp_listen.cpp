@@ -1,8 +1,9 @@
-﻿#define _HAS_STD_BYTE 0
+#define _HAS_STD_BYTE 0
 #include "network/tcp_listen.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iostream>
+#include <cstring>
 using namespace std;
 
 TcpServer::TcpServer()

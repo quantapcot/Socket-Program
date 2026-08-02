@@ -1,4 +1,4 @@
-﻿#ifndef TCP_CONNECT_H
+#ifndef TCP_CONNECT_H
 #define TCP_CONNECT_H
 
 #include <string>
@@ -41,7 +41,10 @@ public:
     // Kiem tra ket noi con hop le khong
     bool isConnected();
 
-    // Chu dong dong ket noi (khong bat buoc goi tay, destructor se tu goi neu quen)
+    // Lay dia chi IP cua client/server dang ket noi toi
+    string getRemoteIP();
+
+    // Chu dong dong ket noi (Phải gọi thủ công khi xong việc, destructor không tự đóng nữa)
     void closeConnection();
 };
 
