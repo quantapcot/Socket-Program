@@ -130,6 +130,8 @@ void handleClient(TcpConnection client, string clientIp) {
 
     if (!reply.empty()) {
       client.sendLine(reply);
+      // Cập nhật lại UI trên Server sau mỗi lệnh làm thay đổi trạng thái
+      SessionManager::getInstance().printActiveSessions();
     }
   }
 

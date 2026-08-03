@@ -49,11 +49,11 @@ std::string DirListService::handleListCommand(std::shared_ptr<Session> session, 
         return "550 Failed to list directory.\r\n";
     }
     
-    // Gửi 150 qua control channel
-    session->controlConnection.sendLine(REPLY_150);
-    
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
+
+    // Gửi 150 qua control channel
+    session->controlConnection.sendLine(REPLY_150);
     
     std::string dataStr = listData.str();
     std::vector<char> buffer(dataStr.begin(), dataStr.end());
@@ -92,10 +92,10 @@ std::string DirListService::handleNlstCommand(std::shared_ptr<Session> session, 
         return "550 Failed to list directory.\r\n";
     }
     
-    session->controlConnection.sendLine(REPLY_150);
-    
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
+
+    session->controlConnection.sendLine(REPLY_150);
     
     std::string dataStr = listData.str();
     std::vector<char> buffer(dataStr.begin(), dataStr.end());

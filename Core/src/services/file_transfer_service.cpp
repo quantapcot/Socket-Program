@@ -45,10 +45,10 @@ std::string FileTransferService::handleRetrCommand(std::shared_ptr<Session> sess
         return "550 File not found.\r\n";
     }
     
-    session->controlConnection.sendLine(REPLY_150);
-    
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
+
+    session->controlConnection.sendLine(REPLY_150);
     
     // Đọc file
     std::ifstream file(fullPath, std::ios::binary);
@@ -77,10 +77,10 @@ std::string FileTransferService::handleStorCommand(std::shared_ptr<Session> sess
     
     std::string fullPath = getFullPath(session, fileName);
     
-    session->controlConnection.sendLine(REPLY_150);
-    
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
+
+    session->controlConnection.sendLine(REPLY_150);
     
     RdtReceiver receiver(dataSock);
     std::vector<char> buffer;
@@ -109,12 +109,12 @@ std::string FileTransferService::handleStouCommand(std::shared_ptr<Session> sess
     std::string fileName = "stou_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count()) + ".tmp";
     std::string fullPath = getFullPath(session, fileName);
     
+    UdpSocket* dataSock = setupDataSocket(session);
+    if (!dataSock) return "425 Can't open data connection.\r\n";
+
     // Gửi 150 FILE: fileName
     std::string reply150 = "150 FILE: " + fileName + "\r\n";
     session->controlConnection.sendLine(reply150);
-    
-    UdpSocket* dataSock = setupDataSocket(session);
-    if (!dataSock) return "425 Can't open data connection.\r\n";
     
     RdtReceiver receiver(dataSock);
     std::vector<char> buffer;
@@ -144,10 +144,10 @@ std::string FileTransferService::handleAppeCommand(std::shared_ptr<Session> sess
     
     std::string fullPath = getFullPath(session, fileName);
     
-    session->controlConnection.sendLine(REPLY_150);
-    
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
+
+    session->controlConnection.sendLine(REPLY_150);
     
     RdtReceiver receiver(dataSock);
     std::vector<char> buffer;
