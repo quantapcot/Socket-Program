@@ -13,6 +13,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <windows.h>
 
 
 using namespace std;
@@ -139,6 +140,7 @@ end_loop:
 }
 
 int main() {
+  SetConsoleOutputCP(CP_UTF8); // Set console to UTF-8
   if (!initNetwork()) {
     cout << "Khong the khoi tao mang" << endl;
     return 1;

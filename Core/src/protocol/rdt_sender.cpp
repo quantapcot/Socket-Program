@@ -50,7 +50,7 @@ bool RdtSender::sendChunkWithWait(const char* payload, size_t length, bool isFin
         
         // Chờ nhận ACK
         int bytesRead = socket->receiveData(recvBuffer, sizeof(recvBuffer));
-        if (bytesRead >= sizeof(RdtHeader)) {
+        if (bytesRead > 0 && (size_t)bytesRead >= sizeof(RdtHeader)) {
             RdtHeader* recvHeader = reinterpret_cast<RdtHeader*>(recvBuffer);
             
             // Kiểm tra checksum của ACK

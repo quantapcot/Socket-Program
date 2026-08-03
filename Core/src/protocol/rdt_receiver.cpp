@@ -24,7 +24,7 @@ bool RdtReceiver::receiveBuffer(std::vector<char>& data) {
     while (!isFin) {
         int bytesRead = socket->receiveData(recvBuffer, sizeof(recvBuffer));
         
-        if (bytesRead >= sizeof(RdtHeader)) {
+        if (bytesRead > 0 && (size_t)bytesRead >= sizeof(RdtHeader)) {
             RdtHeader* header = reinterpret_cast<RdtHeader*>(recvBuffer);
             char* payload = recvBuffer + sizeof(RdtHeader);
             size_t payloadLen = header->payload_len;
@@ -77,7 +77,7 @@ bool RdtReceiver::receiveFile(const std::string& filePath) {
     while (!isFin) {
         int bytesRead = socket->receiveData(recvBuffer, sizeof(recvBuffer));
         
-        if (bytesRead >= sizeof(RdtHeader)) {
+        if (bytesRead > 0 && (size_t)bytesRead >= sizeof(RdtHeader)) {
             RdtHeader* header = reinterpret_cast<RdtHeader*>(recvBuffer);
             char* payload = recvBuffer + sizeof(RdtHeader);
             size_t payloadLen = header->payload_len;
