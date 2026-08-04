@@ -13,5 +13,5 @@ target_compile_definitions(Core PUBLIC _HAS_STD_BYTE=0)
 
 # Link san thu vien mang cua Windows, de Server/Client dung Core khong can tu link lai
 if(WIN32)
-    target_link_libraries(Core PUBLIC ws2_32)
+    target_link_libraries(Core PUBLIC ws2_32 advapi32)
 endif()

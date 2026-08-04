@@ -1,4 +1,5 @@
 #include "services/hash_service.h"
+#include "utils/md5.h"
 
 #include <filesystem>
 #include <fstream>
@@ -27,13 +28,11 @@ std::string HashService::handleHashCommand(std::shared_ptr<Session> session, con
     
     try {
         std::ifstream file(fullPath, std::ios::binary);
-        // Đơn giản hóa: Dùng std::hash để băm toàn bộ nội dung file (minh họa thay thế cho MD5/SHA256)
-        // Để tránh cài thêm OpenSSL, ta dùng hàm băm chuẩn của C++ (trả về size_t)
-        std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        size_t hashValue = std::hash<std::string>{}(content);
+        std::vector<char> buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        std::string hashValue = computeMD5(buffer);
         
         std::ostringstream oss;
-        oss << "213 " << std::hex << std::uppercase << hashValue << "\r\n";
+        oss << "213 " << hashValue << "\r\n";
         return oss.str();
     } catch (...) {
         return "550 Failed to hash file.\r\n";
