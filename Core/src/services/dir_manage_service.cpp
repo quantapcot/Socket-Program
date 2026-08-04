@@ -25,7 +25,7 @@ std::string DirManageService::handleMkdCommand(std::shared_ptr<Session> session,
             std::string virtualPath = session->currentDirectory;
             if (virtualPath.back() != '/') virtualPath += "/";
             virtualPath += dirName;
-            return ReplyFormatter::format257(virtualPath);
+            return ReplyFormatter::format257MKD(virtualPath);
         } else {
             return "550 Directory already exists or cannot be created.\r\n";
         }

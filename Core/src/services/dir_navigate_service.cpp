@@ -5,7 +5,7 @@
 
 std::string DirNavigateService::handlePwdCommand(std::shared_ptr<Session> session) {
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
-    return ReplyFormatter::format257(session->currentDirectory);
+    return ReplyFormatter::format257PWD(session->currentDirectory);
 }
 
 std::string DirNavigateService::handleCwdCommand(std::shared_ptr<Session> session, const std::string& path) {

@@ -20,6 +20,18 @@ std::string ReplyFormatter::format227(const std::string& ip, int port) {
 
 std::string ReplyFormatter::format257(const std::string& path) {
     std::ostringstream oss;
+    oss << "257 \"" << path << "\"\r\n";
+    return oss.str();
+}
+
+std::string ReplyFormatter::format257PWD(const std::string& path) {
+    std::ostringstream oss;
+    oss << "257 \"" << path << "\" is current directory.\r\n";
+    return oss.str();
+}
+
+std::string ReplyFormatter::format257MKD(const std::string& path) {
+    std::ostringstream oss;
     oss << "257 \"" << path << "\" created.\r\n";
     return oss.str();
 }

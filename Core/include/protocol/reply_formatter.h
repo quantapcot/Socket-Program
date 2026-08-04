@@ -10,5 +10,8 @@ public:
     
     // Format 257 cho PWD / MKD
     static std::string format257(const std::string& path);
+
+    static std::string format257PWD(const std::string& path);
+    static std::string format257MKD(const std::string& path);
 };
 #endif // PROTOCOL_REPLY_FORMATTER_H
