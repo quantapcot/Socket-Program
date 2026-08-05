@@ -52,8 +52,15 @@ std::string DirListService::handleListCommand(std::shared_ptr<Session> session, 
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
 
-    // Gửi 150 qua control channel
-    session->controlConnection.sendLine(REPLY_150);
+    // Gửi 150 qua control channel kèm \r\n để Client thoát block
+    session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
+
+    // Nếu là chế độ Passive, Server phải chờ nhận 1 byte "chào hỏi" từ Client 
+    // để UdpSocket biết được IP và Port của Client trước khi gửi file
+    if (session->dataMode == DataMode::PASSIVE) {
+        char dummy[10];
+        dataSock->receiveData(dummy, sizeof(dummy));
+    }
     
     std::string dataStr = listData.str();
     std::vector<char> buffer(dataStr.begin(), dataStr.end());
