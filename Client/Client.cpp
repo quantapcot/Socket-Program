@@ -78,6 +78,19 @@ int main()
         string reply = connection.receiveLine();
         cout << reply << endl;
 
+        // Xử lý Multiline Reply của chuẩn FTP (ví dụ: "214-...")
+        if (reply.length() >= 4 && reply[3] == '-') {
+            string endMarker = reply.substr(0, 3) + " "; // Tạo chuỗi kết thúc, VD: "214 "
+            while (true) {
+                string nextLine = connection.receiveLine();
+                cout << nextLine << endl;
+                // Dừng đọc nếu dòng hiện tại bắt đầu bằng mã gốc + khoảng trắng
+                if (nextLine.length() >= 4 && nextLine.substr(0, 4) == endMarker) {
+                    break;
+                }
+            }
+        }
+
         // Phân tích mã phản hồi
         if (reply.length() >= 3) {
             string codeStr = reply.substr(0, 3);
