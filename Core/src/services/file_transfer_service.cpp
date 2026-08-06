@@ -155,21 +155,30 @@ std::string FileTransferService::handleAppeCommand(std::shared_ptr<Session> sess
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     if (session->dataMode == DataMode::NONE) return "425 Use PORT or PASV first.\r\n";
     if (fileName.empty()) return "501 Syntax error in parameters.\r\n";
-    
+
     std::string fullPath = getFullPath(session, fileName);
-    
+
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
 
-    session->controlConnection.sendLine(REPLY_150);
-    
+    // Fix 1: Thêm \r\n vào đuôi REPLY_150
+    session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
+
+    // Fix 2: Hứng byte chào hỏi SAU KHI gửi 150
+    if (session->dataMode == DataMode::PASSIVE) {
+        char dummy[1024];
+        dataSock->setReceiveTimeout(5000);
+        dataSock->receiveData(dummy, sizeof(dummy));
+    }
+
     RdtReceiver receiver(dataSock);
     std::vector<char> buffer;
     if (receiver.receiveBuffer(buffer)) {
+        // Mấu chốt của lệnh APPE nằm ở cờ std::ios::app (ghi nối tiếp)
         std::ofstream file(fullPath, std::ios::binary | std::ios::app);
         file.write(buffer.data(), buffer.size());
         file.close();
-        
+
         if (session->dataMode == DataMode::ACTIVE) delete dataSock;
         else {
             delete dataSock;
@@ -177,7 +186,8 @@ std::string FileTransferService::handleAppeCommand(std::shared_ptr<Session> sess
             session->dataMode = DataMode::NONE;
         }
         return std::string(REPLY_226) + "\r\n";
-    } else {
+    }
+    else {
         if (session->dataMode == DataMode::ACTIVE) delete dataSock;
         return "426 Connection closed; transfer aborted.\r\n";
     }
