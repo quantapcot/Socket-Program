@@ -84,10 +84,10 @@ std::string DirListService::handleListCommand(std::shared_ptr<Session> session, 
 std::string DirListService::handleNlstCommand(std::shared_ptr<Session> session, const std::string& path) {
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     if (session->dataMode == DataMode::NONE) return "425 Use PORT or PASV first.\r\n";
-    
+
     std::string targetPath = path.empty() ? session->currentDirectory : path;
     std::string fullPath = "ServerRoot" + targetPath;
-    
+
     std::ostringstream listData;
     try {
         if (fs::exists(fullPath) && fs::is_directory(fullPath)) {
@@ -95,18 +95,27 @@ std::string DirListService::handleNlstCommand(std::shared_ptr<Session> session, 
                 listData << entry.path().filename().string() << "\r\n";
             }
         }
-    } catch (...) {
+    }
+    catch (...) {
         return "550 Failed to list directory.\r\n";
     }
-    
+
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
 
-    session->controlConnection.sendLine(REPLY_150);
-    
+    // Fix 1: Thêm \r\n vào đuôi REPLY_150 để Client không bị treo
+    session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
+
+    // Fix 2: Hứng byte chào hỏi từ Client giống hệt các lệnh truyền file
+    if (session->dataMode == DataMode::PASSIVE) {
+        char dummy[1024];
+        dataSock->setReceiveTimeout(5000);
+        dataSock->receiveData(dummy, sizeof(dummy));
+    }
+
     std::string dataStr = listData.str();
     std::vector<char> buffer(dataStr.begin(), dataStr.end());
-    
+
     RdtSender sender(dataSock);
     if (sender.sendBuffer(buffer)) {
         if (session->dataMode == DataMode::ACTIVE) delete dataSock;
@@ -116,7 +125,8 @@ std::string DirListService::handleNlstCommand(std::shared_ptr<Session> session, 
             session->dataMode = DataMode::NONE;
         }
         return std::string(REPLY_226) + "\r\n";
-    } else {
+    }
+    else {
         if (session->dataMode == DataMode::ACTIVE) delete dataSock;
         return "426 Connection closed; transfer aborted.\r\n";
     }
