@@ -15,14 +15,10 @@ static UdpSocket* setupDataSocket(std::shared_ptr<Session> session) {
         sock->open();
         sock->setRemoteAddress(session->clientDataIp, session->clientDataPort);
         return sock;
-    } else if (session->dataMode == DataMode::PASSIVE) {
-        UdpSocket* sock = session->passiveSocket;
-        if (sock == nullptr) return nullptr;
-        
-        char dummy[1024];
-        sock->setReceiveTimeout(5000);
-        sock->receiveData(dummy, sizeof(dummy)); 
-        return sock;
+    }
+    else if (session->dataMode == DataMode::PASSIVE) {
+        // Trả về socket luôn, KHÔNG chặn lại để chờ receiveData ở đây nữa
+        return session->passiveSocket;
     }
     return nullptr;
 }
@@ -79,10 +75,19 @@ std::string FileTransferService::handleStorCommand(std::shared_ptr<Session> sess
     
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
-
-    session->controlConnection.sendLine(REPLY_150);
     
+    // Gửi 150 qua control channel kèm \r\n để Client thoát block
+    session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
+
+    // Nếu là chế độ Passive, Server phải chờ nhận 1 byte "chào hỏi" từ Client
+    // để UdpSocket biết được IP và Port của Client trước khi nhận file
+    if (session->dataMode == DataMode::PASSIVE) {
+        char dummy[10];
+        dataSock->receiveData(dummy, sizeof(dummy));
+    }
+
     RdtReceiver receiver(dataSock);
+
     std::vector<char> buffer;
     if (receiver.receiveBuffer(buffer)) {
         std::ofstream file(fullPath, std::ios::binary);
