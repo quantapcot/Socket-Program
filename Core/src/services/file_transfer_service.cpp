@@ -35,22 +35,30 @@ std::string FileTransferService::handleRetrCommand(std::shared_ptr<Session> sess
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     if (session->dataMode == DataMode::NONE) return "425 Use PORT or PASV first.\r\n";
     if (fileName.empty()) return "501 Syntax error in parameters.\r\n";
-    
+
     std::string fullPath = getFullPath(session, fileName);
     if (!fs::exists(fullPath) || !fs::is_regular_file(fullPath)) {
         return "550 File not found.\r\n";
     }
-    
+
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
 
-    session->controlConnection.sendLine(REPLY_150);
-    
+    // Fix 1: Gửi 150 kèm \r\n
+    session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
+
+    // Fix 2: Hứng byte chào hỏi SAU KHI gửi 150
+    if (session->dataMode == DataMode::PASSIVE) {
+        char dummy[1024];
+        dataSock->setReceiveTimeout(5000);
+        dataSock->receiveData(dummy, sizeof(dummy));
+    }
+
     // Đọc file
     std::ifstream file(fullPath, std::ios::binary);
     std::vector<char> buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
-    
+
     RdtSender sender(dataSock);
     if (sender.sendBuffer(buffer)) {
         if (session->dataMode == DataMode::ACTIVE) delete dataSock;
@@ -60,7 +68,8 @@ std::string FileTransferService::handleRetrCommand(std::shared_ptr<Session> sess
             session->dataMode = DataMode::NONE;
         }
         return std::string(REPLY_226) + "\r\n";
-    } else {
+    }
+    else {
         if (session->dataMode == DataMode::ACTIVE) delete dataSock;
         return "426 Connection closed; transfer aborted.\r\n";
     }
