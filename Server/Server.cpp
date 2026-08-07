@@ -12,6 +12,7 @@
 #include "services/mode_service.h"
 #include "services/session_manager.h"
 #include "services/system_service.h"
+#include "utils/ftp_path.h"
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -153,6 +154,10 @@ int main() {
     cleanupNetwork();
     return 1;
   }
+
+  // Khoi tao va hien thi duong dan ServerRoot (thu muc lam viec giua server va client)
+  auto rootPath = FtpPath::getRoot();
+  cout << "ServerRoot: " << rootPath.string() << endl;
 
   cout << "Hybrid FTP Server dang lang nghe tai port " << port << "..." << endl;
 

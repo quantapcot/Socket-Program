@@ -3,12 +3,15 @@
 #include "protocol/reply_codes.h"
 #include "protocol/rdt_sender.h"
 #include "protocol/rdt_receiver.h"
+#include "utils/ftp_path.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 
 namespace fs = std::filesystem;
 
+// Hàm nội bộ: setup data socket tuỳ theo chế độ ACTIVE hoặc PASSIVE
 static UdpSocket* setupDataSocket(std::shared_ptr<Session> session) {
     if (session->dataMode == DataMode::ACTIVE) {
         UdpSocket* sock = new UdpSocket();
@@ -17,154 +20,153 @@ static UdpSocket* setupDataSocket(std::shared_ptr<Session> session) {
         return sock;
     }
     else if (session->dataMode == DataMode::PASSIVE) {
-        // Trả về socket luôn, KHÔNG chặn lại để chờ receiveData ở đây nữa
         return session->passiveSocket;
     }
     return nullptr;
 }
 
-static std::string getFullPath(std::shared_ptr<Session> session, const std::string& path) {
-    std::string rootFolder = "ServerRoot";
-    std::string fullPath = rootFolder + session->currentDirectory;
-    if (fullPath.back() != '/') fullPath += "/";
-    fullPath += path;
-    return fullPath;
+// Hàm nội bộ: dọn dẹp data socket sau khi truyền xong
+static void cleanupDataSocket(std::shared_ptr<Session> session, UdpSocket* sock) {
+    if (session->dataMode == DataMode::ACTIVE) {
+        delete sock;
+    } else {
+        delete sock;
+        session->passiveSocket = nullptr;
+        session->dataMode = DataMode::NONE;
+    }
 }
 
+// Xử lý lệnh RETR: gửi file thật từ ServerRoot về client qua data channel
 std::string FileTransferService::handleRetrCommand(std::shared_ptr<Session> session, const std::string& fileName) {
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     if (session->dataMode == DataMode::NONE) return "425 Use PORT or PASV first.\r\n";
     if (fileName.empty()) return "501 Syntax error in parameters.\r\n";
 
-    std::string fullPath = getFullPath(session, fileName);
-    if (!fs::exists(fullPath) || !fs::is_regular_file(fullPath)) {
+    // Giải quyết đường dẫn thật và kiểm tra bảo mật
+    fs::path realPath = FtpPath::resolve(session->currentDirectory, fileName);
+    if (realPath.empty()) return "550 Access denied.\r\n";
+
+    if (!fs::exists(realPath) || !fs::is_regular_file(realPath)) {
         return "550 File not found.\r\n";
     }
 
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
 
-    // Fix 1: Gửi 150 kèm \r\n
+    // Gửi 150 trước để client biết sắp có dữ liệu đến
     session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
 
-    // Fix 2: Hứng byte chào hỏi SAU KHI gửi 150
+    // Chế độ PASSIVE: chờ nhận byte "chào hỏi" từ client để biết địa chỉ đích
     if (session->dataMode == DataMode::PASSIVE) {
         char dummy[1024];
         dataSock->setReceiveTimeout(5000);
         dataSock->receiveData(dummy, sizeof(dummy));
     }
 
-    // Đọc file
-    std::ifstream file(fullPath, std::ios::binary);
+    // Đọc toàn bộ file thật từ disk vào buffer rồi gửi qua RDT
+    std::ifstream file(realPath, std::ios::binary);
     std::vector<char> buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
 
     RdtSender sender(dataSock);
     if (sender.sendBuffer(buffer)) {
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
-        else {
-            delete dataSock;
-            session->passiveSocket = nullptr;
-            session->dataMode = DataMode::NONE;
-        }
+        cleanupDataSocket(session, dataSock);
         return std::string(REPLY_226) + "\r\n";
-    }
-    else {
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
+    } else {
+        cleanupDataSocket(session, dataSock);
         return "426 Connection closed; transfer aborted.\r\n";
     }
 }
 
+// Xử lý lệnh STOR: nhận file từ client và ghi xuống disk thật bên trong ServerRoot
 std::string FileTransferService::handleStorCommand(std::shared_ptr<Session> session, const std::string& fileName) {
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     if (session->dataMode == DataMode::NONE) return "425 Use PORT or PASV first.\r\n";
     if (fileName.empty()) return "501 Syntax error in parameters.\r\n";
-    
-    std::string fullPath = getFullPath(session, fileName);
-    
+
+    fs::path realPath = FtpPath::resolve(session->currentDirectory, fileName);
+    if (realPath.empty()) return "550 Access denied.\r\n";
+
+    // Đảm bảo thư mục chứa file tồn tại
+    fs::create_directories(realPath.parent_path());
+
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
-    
-    // Gửi 150 qua control channel kèm \r\n để Client thoát block
+
     session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
 
-    // Nếu là chế độ Passive, Server phải chờ nhận 1 byte "chào hỏi" từ Client
-    // để UdpSocket biết được IP và Port của Client trước khi nhận file
+    // Chế độ PASSIVE: chờ byte chào hỏi từ client
     if (session->dataMode == DataMode::PASSIVE) {
         char dummy[10];
         dataSock->receiveData(dummy, sizeof(dummy));
     }
 
     RdtReceiver receiver(dataSock);
-
     std::vector<char> buffer;
     if (receiver.receiveBuffer(buffer)) {
-        std::ofstream file(fullPath, std::ios::binary);
+        // Ghi dữ liệu nhận được xuống file thật trên disk
+        std::ofstream file(realPath, std::ios::binary);
         file.write(buffer.data(), buffer.size());
         file.close();
-        
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
-        else {
-            delete dataSock;
-            session->passiveSocket = nullptr;
-            session->dataMode = DataMode::NONE;
-        }
+
+        cleanupDataSocket(session, dataSock);
         return std::string(REPLY_226) + "\r\n";
     } else {
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
+        cleanupDataSocket(session, dataSock);
         return "426 Connection closed; transfer aborted.\r\n";
     }
 }
 
+// Xử lý lệnh STOU: nhận file từ client, tự sinh tên file duy nhất trên server
 std::string FileTransferService::handleStouCommand(std::shared_ptr<Session> session) {
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     if (session->dataMode == DataMode::NONE) return "425 Use PORT or PASV first.\r\n";
-    
+
+    // Tạo tên file duy nhất dựa trên timestamp
     std::string fileName = "stou_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count()) + ".tmp";
-    std::string fullPath = getFullPath(session, fileName);
-    
+    fs::path realPath = FtpPath::resolve(session->currentDirectory, fileName);
+    if (realPath.empty()) return "550 Access denied.\r\n";
+
+    fs::create_directories(realPath.parent_path());
+
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
 
-    // Gửi 150 FILE: fileName
-    std::string reply150 = "150 FILE: " + fileName + "\r\n";
-    session->controlConnection.sendLine(reply150);
-    
+    // Gửi 150 kèm tên file sẽ được tạo (theo chuẩn FTP)
+    session->controlConnection.sendLine("150 FILE: " + fileName + "\r\n");
+
     RdtReceiver receiver(dataSock);
     std::vector<char> buffer;
     if (receiver.receiveBuffer(buffer)) {
-        std::ofstream file(fullPath, std::ios::binary);
+        std::ofstream file(realPath, std::ios::binary);
         file.write(buffer.data(), buffer.size());
         file.close();
-        
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
-        else {
-            delete dataSock;
-            session->passiveSocket = nullptr;
-            session->dataMode = DataMode::NONE;
-        }
-        // Gửi 226 hoặc 250 chứa tên file
-        return "226 Transfer complete. File generated: " + fileName + "\r\n";
+
+        cleanupDataSocket(session, dataSock);
+        return "226 Transfer complete. File stored as: " + fileName + "\r\n";
     } else {
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
+        cleanupDataSocket(session, dataSock);
         return "426 Connection closed; transfer aborted.\r\n";
     }
 }
 
+// Xử lý lệnh APPE: nhận file từ client và nối thêm vào cuối file thật trên disk
 std::string FileTransferService::handleAppeCommand(std::shared_ptr<Session> session, const std::string& fileName) {
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     if (session->dataMode == DataMode::NONE) return "425 Use PORT or PASV first.\r\n";
     if (fileName.empty()) return "501 Syntax error in parameters.\r\n";
 
-    std::string fullPath = getFullPath(session, fileName);
+    fs::path realPath = FtpPath::resolve(session->currentDirectory, fileName);
+    if (realPath.empty()) return "550 Access denied.\r\n";
+
+    // Đảm bảo thư mục chứa file tồn tại (APPE có thể tạo file mới)
+    fs::create_directories(realPath.parent_path());
 
     UdpSocket* dataSock = setupDataSocket(session);
     if (!dataSock) return "425 Can't open data connection.\r\n";
 
-    // Fix 1: Thêm \r\n vào đuôi REPLY_150
     session->controlConnection.sendLine(std::string(REPLY_150) + "\r\n");
 
-    // Fix 2: Hứng byte chào hỏi SAU KHI gửi 150
     if (session->dataMode == DataMode::PASSIVE) {
         char dummy[1024];
         dataSock->setReceiveTimeout(5000);
@@ -174,27 +176,22 @@ std::string FileTransferService::handleAppeCommand(std::shared_ptr<Session> sess
     RdtReceiver receiver(dataSock);
     std::vector<char> buffer;
     if (receiver.receiveBuffer(buffer)) {
-        // Mấu chốt của lệnh APPE nằm ở cờ std::ios::app (ghi nối tiếp)
-        std::ofstream file(fullPath, std::ios::binary | std::ios::app);
+        // Cờ std::ios::app: mở file để ghi nối tiếp vào cuối (không ghi đè)
+        std::ofstream file(realPath, std::ios::binary | std::ios::app);
         file.write(buffer.data(), buffer.size());
         file.close();
 
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
-        else {
-            delete dataSock;
-            session->passiveSocket = nullptr;
-            session->dataMode = DataMode::NONE;
-        }
+        cleanupDataSocket(session, dataSock);
         return std::string(REPLY_226) + "\r\n";
-    }
-    else {
-        if (session->dataMode == DataMode::ACTIVE) delete dataSock;
+    } else {
+        cleanupDataSocket(session, dataSock);
         return "426 Connection closed; transfer aborted.\r\n";
     }
 }
 
+// Xử lý lệnh ABOR: hủy truyền dữ liệu đang diễn ra
+// Trong mô hình đồng bộ (synchronous), không thể interrupt thread đang chạy.
+// Trả về 226 theo chuẩn FTP.
 std::string FileTransferService::handleAborCommand(std::shared_ptr<Session> session) {
-    // ABOR đơn giản ngắt truyền. Trong mô hình synchronous, việc hủy ngang sẽ hơi khó khăn trừ khi có thread khác interrupt.
-    // Tạm thời trả về 226
     return "226 Abort successful.\r\n";
 }
