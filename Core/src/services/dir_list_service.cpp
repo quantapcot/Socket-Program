@@ -135,5 +135,5 @@ std::string DirListService::handleNlstCommand(std::shared_ptr<Session> session, 
 std::string DirListService::handleStatCommand(std::shared_ptr<Session> session, const std::string& path) {
     if (session->authState != AuthState::LOGGED_IN) return "530 Not logged in.\r\n";
     // STAT trả về thông tin trạng thái server hoặc thư mục qua control channel, không dùng data channel
-    return "211-Server status:\r\n  Hybrid FTP Server is running.\r\n211 End of status.\r\n";
+    return "211-Server status:\r\n211-Hybrid FTP Server is running.\r\n211 End of status.\r\n";
 }

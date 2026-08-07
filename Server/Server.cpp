@@ -8,15 +8,15 @@
 #include "services/file_manage_service.h"
 #include "services/file_transfer_service.h"
 #include "services/hash_service.h"
+#include "services/help_service.h"
 #include "services/mode_service.h"
 #include "services/session_manager.h"
+#include "services/system_service.h"
 #include <iostream>
 #include <thread>
 #include <vector>
 #include <windows.h>
 
-
-using namespace std;
 
 void handleClient(TcpConnection client, string clientIp) {
   auto session = SessionManager::getInstance().createSession(client, clientIp);
@@ -110,21 +110,18 @@ void handleClient(TcpConnection client, string clientIp) {
       reply = HashService::handleHashCommand(session, cmd.argument);
       break;
     case CommandType::QUIT:
-      reply = "221 Goodbye.\r\n";
+      reply = SystemService::handleQuitCommand(session);
       client.sendLine(reply);
       goto end_loop;
     case CommandType::NOOP:
-      reply = "200 NOOP ok.\r\n";
+      reply = SystemService::handleNoopCommand(session);
       break;
     case CommandType::HELP:
-      reply = "214-The following commands are recognized.\r\n USER PASS QUIT "
-              "NOOP PWD CWD CDUP MKD RMD LIST NLST STAT SIZE MDTM TYPE MODE "
-              "PORT PASV RETR STOR STOU APPE DELE RNFR RNTO HASH ABOR "
-              "HELP\r\n214 Help OK.\r\n";
+      reply = HelpService::handleHelpCommand(session, cmd.argument);
       break;
     case CommandType::UNKNOWN:
     default:
-      reply = "500 Syntax error, command unrecognized.\r\n";
+      reply = SystemService::handleUnknownCommand(session);
       break;
     }
 

@@ -94,7 +94,6 @@ bool TcpConnection::sendLine(string text)
 
     SOCKET realSocket = (SOCKET)socketHandle;
 
-    // KHONG tu dong them "\n" nua -- noi goi ham nay da tu them san "\r\n" roi
     int result = send(realSocket, text.c_str(), (int)text.length(), 0);
 
     if (result == SOCKET_ERROR)
@@ -102,6 +101,7 @@ bool TcpConnection::sendLine(string text)
         cout << "Gui du lieu that bai" << endl;
         return false;
     }
+
     return true;
 }
 

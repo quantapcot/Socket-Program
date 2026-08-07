@@ -16,8 +16,10 @@ set(CORE_SOURCES
     src/services/file_manage_service.cpp
     src/services/file_transfer_service.cpp
     src/services/hash_service.cpp
+    src/services/help_service.cpp
     src/services/mode_service.cpp
     src/services/session_manager.cpp
+    src/services/system_service.cpp
     src/utils/md5.cpp
 )
 

@@ -78,14 +78,17 @@ int main()
         string reply = connection.receiveLine();
         cout << reply << endl;
 
-        // Xử lý Multiline Reply của chuẩn FTP (ví dụ: "214-...")
+        // Đọc hết FTP Multiline Reply theo chuẩn (RFC 959):
+        // Dòng đầu có dạng "XYZ-..." → đọc tiếp đến khi gặp "XYZ " (code + space)
         if (reply.length() >= 4 && reply[3] == '-') {
-            string endMarker = reply.substr(0, 3) + " "; // Tạo chuỗi kết thúc, VD: "214 "
+            string endCode = reply.substr(0, 3); // VD: "214"
             while (true) {
                 string nextLine = connection.receiveLine();
                 cout << nextLine << endl;
-                // Dừng đọc nếu dòng hiện tại bắt đầu bằng mã gốc + khoảng trắng
-                if (nextLine.length() >= 4 && nextLine.substr(0, 4) == endMarker) {
+                // Dòng kết thúc: bắt đầu bằng đúng code + dấu cách
+                if (nextLine.length() >= 4 &&
+                    nextLine.substr(0, 3) == endCode &&
+                    nextLine[3] == ' ') {
                     break;
                 }
             }
